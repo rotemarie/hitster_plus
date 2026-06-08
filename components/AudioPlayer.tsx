@@ -43,7 +43,11 @@ export function AudioPlayer({ previewUrl }: AudioPlayerProps) {
   function togglePlay() {
     const audio = audioRef.current
     if (!audio) return
-    playing ? audio.pause() : audio.play().catch(() => {})
+    if (playing) {
+      audio.pause()
+    } else {
+      audio.play().catch(() => {})
+    }
   }
 
   if (!previewUrl) {

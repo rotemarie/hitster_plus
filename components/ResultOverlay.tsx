@@ -1,5 +1,5 @@
 'use client'
-import type { TurnResultPayload, PlayerSummary } from '@/lib/types'
+import type { TurnResultPayload } from '@/lib/types'
 
 interface ResultOverlayProps {
   result: TurnResultPayload

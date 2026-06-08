@@ -1,12 +1,23 @@
 import type { Track } from './types'
 
+interface SpotifyTrack {
+  name: string
+  artists: { name: string }[]
+  album: { release_date: string }
+  preview_url: string | null
+}
+
+interface SpotifyPlaylistItem {
+  track: SpotifyTrack | null
+}
+
 export function extractPlaylistId(url: string): string {
   const match = url.match(/playlist\/([A-Za-z0-9]+)/)
   if (!match) throw new Error('Invalid Spotify playlist URL')
   return match[1]
 }
 
-export function buildTrackFromSpotify(item: any): Track | null {
+export function buildTrackFromSpotify(item: SpotifyPlaylistItem): Track | null {
   const track = item?.track
   if (!track || !track.preview_url) return null
   return {
@@ -48,7 +59,7 @@ export async function fetchPlaylistTracks(playlistUrl: string): Promise<Track[]>
   while (url) {
     const res: Response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
     if (!res.ok) throw new Error(`Spotify playlist fetch failed: ${res.status}`)
-    const data: { next: string | null; items: any[] } = await res.json()
+    const data: { next: string | null; items: SpotifyPlaylistItem[] } = await res.json()
 
     for (const item of data.items) {
       const track = buildTrackFromSpotify(item)
