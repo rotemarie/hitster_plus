@@ -46,9 +46,9 @@ export async function fetchPlaylistTracks(playlistUrl: string): Promise<Track[]>
     `?limit=100&fields=next,items(track(name,artists(name),album(release_date),preview_url))`
 
   while (url) {
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+    const res: Response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
     if (!res.ok) throw new Error(`Spotify playlist fetch failed: ${res.status}`)
-    const data = await res.json()
+    const data: { next: string | null; items: any[] } = await res.json()
 
     for (const item of data.items) {
       const track = buildTrackFromSpotify(item)
