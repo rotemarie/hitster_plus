@@ -30,7 +30,6 @@ export async function POST(
   const challenge = state.pendingChallenge
   // A challenge is "correct" when the challenger predicted the placement was wrong and it is
   const challengeCorrect = challenge !== null && !placementCorrect
-  const challengeIncorrect = challenge !== null && placementCorrect
 
   // Award token for correct guess (max 5)
   if (guessCorrect) {
@@ -48,9 +47,6 @@ export async function POST(
     activePlayer.timeline = insertCardSorted(activePlayer.timeline, card)
   }
   // else: card discarded (wrong placement, no challenge)
-
-  // If HITSTER was incorrect, token was already spent — no further action needed
-  void challengeIncorrect
 
   const winner = checkWinner(state.players, state.settings.gameLength)
 

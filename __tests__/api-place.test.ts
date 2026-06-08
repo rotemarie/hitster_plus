@@ -124,14 +124,20 @@ describe('POST /api/games/[code]/place', () => {
 
   it('sets phase to finished and broadcasts game-ended when win condition met', async () => {
     const state = makeState({
-      settings: { gameLength: 2, tokensEnabled: false },
+      settings: { gameLength: 5, tokensEnabled: false },
       players: [
-        { id: 'p1', name: 'Alice', timeline: [{ title: 'X', artist: 'Y', year: 1980 }], tokens: 0 },
+        { id: 'p1', name: 'Alice', timeline: [
+          { title: 'A', artist: 'X', year: 1960 },
+          { title: 'B', artist: 'X', year: 1970 },
+          { title: 'C', artist: 'X', year: 1980 },
+          { title: 'D', artist: 'X', year: 2000 },
+        ], tokens: 0 },
         { id: 'p2', name: 'Bob', timeline: [], tokens: 0 },
       ],
+      // currentTrack year=1990, position=3 places it between 1980 and 2000 cards
     })
     getGame.mockResolvedValue(state)
-    await POST(makeRequest('ABC123', { playerId: 'p1', position: 1 }), { params: { code: 'ABC123' } })
+    await POST(makeRequest('ABC123', { playerId: 'p1', position: 3 }), { params: { code: 'ABC123' } })
     const saved: GameState = mockSave.mock.calls[0][0]
     expect(saved.phase).toBe('finished')
     expect(mockTrigger).toHaveBeenCalledWith('game-ABC123', 'game-ended', expect.objectContaining({
