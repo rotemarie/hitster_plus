@@ -24,6 +24,7 @@ export default function CreatePage() {
       const data = await res.json()
       if (!res.ok) { setError(data.error); setLoading(false); return }
       localStorage.setItem(`hitster_player_${data.roomCode}`, data.playerId)
+      setLoading(false)
       router.push(`/room/${data.roomCode}`)
     } catch {
       setError('Something went wrong. Please try again.')

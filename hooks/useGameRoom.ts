@@ -149,7 +149,7 @@ export function useGameRoom(roomCode: string, playerId: string) {
     })
 
     return () => { pusher.unsubscribe(`game-${roomCode}`) }
-  }, [roomCode, playerId])
+  }, [roomCode])
 
   const post = useCallback(async (path: string, body: object) => {
     const res = await fetch(`/api/games/${roomCode}/${path}`, {

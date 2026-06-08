@@ -24,6 +24,7 @@ function JoinForm() {
       const data = await res.json()
       if (!res.ok) { setError(data.error); setLoading(false); return }
       localStorage.setItem(`hitster_player_${code.toUpperCase()}`, data.playerId)
+      setLoading(false)
       router.push(`/room/${code.toUpperCase()}`)
     } catch {
       setError('Something went wrong. Please try again.')
