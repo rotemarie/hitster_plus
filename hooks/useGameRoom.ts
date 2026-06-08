@@ -33,6 +33,7 @@ export function useGameRoom(roomCode: string, playerId: string) {
   const [gameState, setGameState] = useState<ClientGameState>(initialState)
   const [connected, setConnected] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [hostId, setHostId] = useState<string | null>(null)
 
   // Load initial state from server
   useEffect(() => {
@@ -41,6 +42,7 @@ export function useGameRoom(roomCode: string, playerId: string) {
       .then(r => r.json())
       .then(data => {
         if (data.error) { setError(data.error); return }
+        setHostId(data.hostId ?? null)
         setGameState({
           phase: data.phase,
           settings: data.settings,
@@ -149,7 +151,7 @@ export function useGameRoom(roomCode: string, playerId: string) {
     })
 
     return () => { pusher.unsubscribe(`game-${roomCode}`) }
-  }, [roomCode])
+  }, [roomCode, playerId])
 
   const post = useCallback(async (path: string, body: object) => {
     const res = await fetch(`/api/games/${roomCode}/${path}`, {
@@ -173,5 +175,5 @@ export function useGameRoom(roomCode: string, playerId: string) {
     nextTurn: () => post('next', {}),
   }
 
-  return { gameState, connected, error, actions }
+  return { gameState, connected, error, actions, hostId }
 }

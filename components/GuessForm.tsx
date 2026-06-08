@@ -15,6 +15,8 @@ export function GuessForm({ onSubmit, onSkip, disabled = false }: GuessFormProps
     e.preventDefault()
     if (!title.trim() || !artist.trim()) return
     onSubmit(title.trim(), artist.trim())
+    setTitle('')
+    setArtist('')
   }
 
   return (

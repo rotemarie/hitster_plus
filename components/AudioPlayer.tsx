@@ -12,6 +12,8 @@ export function AudioPlayer({ previewUrl }: AudioPlayerProps) {
 
   useEffect(() => {
     if (!audioRef.current || !previewUrl) return
+    setPlaying(false)
+    setProgress(0)
     audioRef.current.src = previewUrl
     audioRef.current.play().catch(() => {})
   }, [previewUrl])

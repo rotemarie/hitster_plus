@@ -12,7 +12,6 @@ export default function RoomPage() {
   const code = (params.code as string).toUpperCase()
 
   const [playerId, setPlayerId] = useState<string | null>(null)
-  const [hostId, setHostId] = useState<string | null>(null)
 
   useEffect(() => {
     const storedId = localStorage.getItem(`hitster_player_${code}`)
@@ -21,16 +20,9 @@ export default function RoomPage() {
       return
     }
     setPlayerId(storedId)
-
-    fetch(`/api/games/${code}?playerId=${storedId}`)
-      .then(r => r.json())
-      .then(data => {
-        if (data.error) { router.replace('/'); return }
-        setHostId(data.hostId)
-      })
   }, [code, router])
 
-  const { gameState, connected, error, actions } = useGameRoom(
+  const { gameState, connected, error, actions, hostId } = useGameRoom(
     playerId ? code : '',
     playerId ?? ''
   )
