@@ -96,10 +96,11 @@ export default function CreatePage() {
       let tracks: Track[]
       try {
         tracks = await fetchTracksFromSpotify(playlistUrl, spotifyToken)
-      } catch {
+      } catch (err) {
+        console.error('fetchTracksFromSpotify error:', err)
         sessionStorage.removeItem('spotify_token')
         setSpotifyToken(null)
-        setError('Could not fetch playlist. Try reconnecting Spotify.')
+        setError(`Could not fetch playlist: ${err instanceof Error ? err.message : String(err)}`)
         setLoading(false)
         return
       }
