@@ -82,6 +82,7 @@ export default function CreatePage() {
       code_challenge_method: 'S256',
       code_challenge: challenge,
       scope: 'playlist-read-private playlist-read-collaborative',
+      show_dialog: 'true',
     })
 
     window.location.href = `https://accounts.spotify.com/authorize?${params}`
