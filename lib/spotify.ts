@@ -47,18 +47,20 @@ async function getAccessToken(): Promise<string> {
   return data.access_token
 }
 
-export async function fetchPlaylistTracks(playlistUrl: string): Promise<Track[]> {
+export async function fetchPlaylistTracks(playlistUrl: string, userToken?: string): Promise<Track[]> {
   const playlistId = extractPlaylistId(playlistUrl)
-  const token = await getAccessToken()
+  const token = userToken ?? await getAccessToken()
   const tracks: Track[] = []
 
   let url: string | null =
-    `https://api.spotify.com/v1/playlists/${playlistId}/tracks` +
-    `?limit=100&fields=next,items(track(name,artists(name),album(release_date),preview_url))`
+    `https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=100`
 
   while (url) {
     const res: Response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
-    if (!res.ok) throw new Error(`Spotify playlist fetch failed: ${res.status}`)
+    if (!res.ok) {
+      const body = await res.text()
+      throw new Error(`Spotify playlist fetch failed: ${res.status} — ${body}`)
+    }
     const data: { next: string | null; items: SpotifyPlaylistItem[] } = await res.json()
 
     for (const item of data.items) {
