@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { saveGame } from '@/lib/redis'
 import { generateRoomCode, shuffle } from '@/lib/game-logic'
-import type { GameState, Player, Track } from '@/lib/types'
+import type { GameState, Player } from '@/lib/types'
 
 export async function POST(request: Request) {
   const body = await request.json()
