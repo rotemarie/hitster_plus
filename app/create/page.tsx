@@ -48,7 +48,7 @@ export default function CreatePage() {
   const [connecting, setConnecting] = useState(false)
 
   useEffect(() => {
-    const stored = sessionStorage.getItem('spotify_token')
+    const stored = localStorage.getItem('spotify_token')
     if (stored) { setSpotifyToken(stored); return }
 
     const params = new URLSearchParams(window.location.search)
@@ -61,7 +61,7 @@ export default function CreatePage() {
     setConnecting(true)
     exchangeCodeForToken(code, verifier, SPOTIFY_CLIENT_ID, `${window.location.origin}/create`)
       .then(token => {
-        sessionStorage.setItem('spotify_token', token)
+        localStorage.setItem('spotify_token', token)
         sessionStorage.removeItem('spotify_code_verifier')
         setSpotifyToken(token)
         router.replace('/create')
@@ -99,7 +99,7 @@ export default function CreatePage() {
         tracks = await fetchTracksFromSpotify(playlistUrl, spotifyToken)
       } catch (err) {
         console.error('fetchTracksFromSpotify error:', err)
-        sessionStorage.removeItem('spotify_token')
+        localStorage.removeItem('spotify_token')
         setSpotifyToken(null)
         setError(`Could not fetch playlist: ${err instanceof Error ? err.message : String(err)}`)
         setLoading(false)
@@ -165,7 +165,7 @@ export default function CreatePage() {
               <span>Spotify connected</span>
               <button
                 type="button"
-                onClick={() => { sessionStorage.removeItem('spotify_token'); setSpotifyToken(null) }}
+                onClick={() => { localStorage.removeItem('spotify_token'); setSpotifyToken(null) }}
                 className="ml-auto text-gray-500 hover:text-gray-300 text-xs"
               >
                 Disconnect
