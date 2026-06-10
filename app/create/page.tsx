@@ -59,14 +59,20 @@ export default function CreatePage() {
     if (!verifier) return
 
     setConnecting(true)
+    console.log('[spotify] exchanging code, verifier length:', verifier.length, 'redirect_uri:', `${window.location.origin}/create`)
     exchangeCodeForToken(code, verifier, SPOTIFY_CLIENT_ID, `${window.location.origin}/create`)
       .then(token => {
+        console.log('[spotify] token received, length:', token?.length, 'value:', token?.substring(0, 20))
         localStorage.setItem('spotify_token', token)
+        console.log('[spotify] stored in localStorage:', localStorage.getItem('spotify_token')?.substring(0, 20))
         sessionStorage.removeItem('spotify_code_verifier')
         setSpotifyToken(token)
         router.replace('/create')
       })
-      .catch(() => setError('Failed to connect Spotify. Please try again.'))
+      .catch((err) => {
+        console.error('[spotify] exchange failed:', err)
+        setError('Failed to connect Spotify. Please try again.')
+      })
       .finally(() => setConnecting(false))
   }, [router])
 
