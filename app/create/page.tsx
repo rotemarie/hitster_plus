@@ -6,7 +6,7 @@ import type { Track } from '@/lib/types'
 
 const SPOTIFY_CLIENT_ID = process.env.NEXT_PUBLIC_SPOTIFY_CLIENT_ID!
 
-async function fetchTracksFromSpotify(playlistUrl: string, token: string): Promise<Track[]> {
+async function fetchSpotifyTracks(playlistUrl: string, token: string): Promise<Track[]> {
   const match = playlistUrl.match(/playlist\/([A-Za-z0-9]+)/)
   if (!match) throw new Error('Invalid Spotify playlist URL')
   const playlistId = match[1]
@@ -47,6 +47,9 @@ export default function CreatePage() {
   const [spotifyToken, setSpotifyToken] = useState<string | null>(null)
   const [connecting, setConnecting] = useState(false)
 
+  const isSpotify = playlistUrl.includes('spotify.com')
+  const isDeezer = playlistUrl.includes('deezer.com')
+
   useEffect(() => {
     const stored = localStorage.getItem('spotify_token')
     if (stored) { setSpotifyToken(stored); return }
@@ -59,20 +62,14 @@ export default function CreatePage() {
     if (!verifier) return
 
     setConnecting(true)
-    console.log('[spotify] exchanging code, verifier length:', verifier.length, 'redirect_uri:', `${window.location.origin}/create`)
     exchangeCodeForToken(code, verifier, SPOTIFY_CLIENT_ID, `${window.location.origin}/create`)
       .then(token => {
-        console.log('[spotify] token received, length:', token?.length, 'value:', token?.substring(0, 20))
         localStorage.setItem('spotify_token', token)
-        console.log('[spotify] stored in localStorage:', localStorage.getItem('spotify_token')?.substring(0, 20))
         sessionStorage.removeItem('spotify_code_verifier')
         setSpotifyToken(token)
         router.replace('/create')
       })
-      .catch((err) => {
-        console.error('[spotify] exchange failed:', err)
-        setError('Failed to connect Spotify. Please try again.')
-      })
+      .catch(() => setError('Failed to connect Spotify. Please try again.'))
       .finally(() => setConnecting(false))
   }, [router])
 
@@ -96,18 +93,34 @@ export default function CreatePage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!spotifyToken) return
     setLoading(true)
     setError('')
+
     try {
       let tracks: Track[]
-      try {
-        tracks = await fetchTracksFromSpotify(playlistUrl, spotifyToken)
-      } catch (err) {
-        console.error('fetchTracksFromSpotify error:', err)
-        localStorage.removeItem('spotify_token')
-        setSpotifyToken(null)
-        setError(`Could not fetch playlist: ${err instanceof Error ? err.message : String(err)}`)
+
+      if (isDeezer) {
+        const res = await fetch(`/api/deezer-tracks?url=${encodeURIComponent(playlistUrl)}`)
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error ?? 'Failed to fetch Deezer playlist')
+        tracks = data.tracks
+      } else if (isSpotify) {
+        if (!spotifyToken) {
+          setError('Connect your Spotify account first.')
+          setLoading(false)
+          return
+        }
+        try {
+          tracks = await fetchSpotifyTracks(playlistUrl, spotifyToken)
+        } catch (err) {
+          localStorage.removeItem('spotify_token')
+          setSpotifyToken(null)
+          setError(`Could not fetch playlist: ${err instanceof Error ? err.message : String(err)}`)
+          setLoading(false)
+          return
+        }
+      } else {
+        setError('Please paste a Spotify or Deezer playlist URL.')
         setLoading(false)
         return
       }
@@ -134,8 +147,8 @@ export default function CreatePage() {
       localStorage.setItem(`hitster_player_${data.roomCode}`, data.playerId)
       setLoading(false)
       router.push(`/room/${data.roomCode}`)
-    } catch {
-      setError('Something went wrong. Please try again.')
+    } catch (err) {
+      setError(`Something went wrong: ${err instanceof Error ? err.message : String(err)}`)
       setLoading(false)
     }
   }
@@ -153,89 +166,109 @@ export default function CreatePage() {
       <div className="w-full max-w-md">
         <h1 className="text-3xl font-bold mb-8">Create a Game</h1>
 
-        {!spotifyToken ? (
-          <div className="flex flex-col items-center gap-4 py-8">
-            <p className="text-gray-400 text-center">Connect your Spotify account to use your playlists</p>
-            <button
-              onClick={handleConnectSpotify}
-              className="px-8 py-4 bg-green-500 hover:bg-green-400 text-black font-bold rounded-xl text-lg transition"
-            >
-              Connect Spotify
-            </button>
-            {error && <p className="text-red-400 text-sm">{error}</p>}
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">Your name</label>
+            <input
+              className="w-full bg-gray-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+              value={hostName}
+              onChange={e => setHostName(e.target.value)}
+              placeholder="Enter your name"
+              required
+            />
           </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-            <div className="flex items-center gap-2 text-sm text-green-400">
-              <span>✓</span>
-              <span>Spotify connected</span>
-              <button
-                type="button"
-                onClick={() => { localStorage.removeItem('spotify_token'); setSpotifyToken(null) }}
-                className="ml-auto text-gray-500 hover:text-gray-300 text-xs"
-              >
-                Disconnect
-              </button>
-            </div>
-            <div>
-              <label className="block text-sm text-gray-400 mb-1">Your name</label>
-              <input
-                className="w-full bg-gray-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
-                value={hostName}
-                onChange={e => setHostName(e.target.value)}
-                placeholder="Enter your name"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-400 mb-1">Spotify playlist URL</label>
-              <input
-                className="w-full bg-gray-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
-                value={playlistUrl}
-                onChange={e => setPlaylistUrl(e.target.value)}
-                placeholder="https://open.spotify.com/playlist/..."
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm text-gray-400 mb-2">Game length</label>
-              <div className="flex gap-3">
-                {([5, 10] as const).map(n => (
+
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">Playlist URL</label>
+            <input
+              className="w-full bg-gray-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
+              value={playlistUrl}
+              onChange={e => setPlaylistUrl(e.target.value)}
+              placeholder="Paste a Spotify or Deezer playlist URL"
+              required
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              Supports Spotify and Deezer playlists
+            </p>
+          </div>
+
+          {isSpotify && (
+            <div className="bg-gray-800 rounded-lg px-4 py-3">
+              {spotifyToken ? (
+                <div className="flex items-center gap-2 text-sm text-green-400">
+                  <span>&#10003;</span>
+                  <span>Spotify connected</span>
                   <button
-                    key={n}
                     type="button"
-                    onClick={() => setGameLength(n)}
-                    className={`flex-1 py-3 rounded-lg font-semibold transition ${
-                      gameLength === n
-                        ? 'bg-green-500 text-black'
-                        : 'bg-gray-800 text-white hover:bg-gray-700'
-                    }`}
+                    onClick={() => { localStorage.removeItem('spotify_token'); setSpotifyToken(null) }}
+                    className="ml-auto text-gray-500 hover:text-gray-300 text-xs"
                   >
-                    {n === 5 ? 'Short (5 cards)' : 'Long (10 cards)'}
+                    Disconnect
                   </button>
-                ))}
-              </div>
+                </div>
+              ) : (
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-sm text-gray-400">Spotify required for this URL</span>
+                  <button
+                    type="button"
+                    onClick={handleConnectSpotify}
+                    className="px-4 py-2 bg-green-500 hover:bg-green-400 text-black font-semibold rounded-lg text-sm transition shrink-0"
+                  >
+                    Connect Spotify
+                  </button>
+                </div>
+              )}
             </div>
-            <div className="flex items-center justify-between bg-gray-800 rounded-lg px-4 py-3">
-              <span className="text-sm">Enable token system</span>
-              <button
-                type="button"
-                onClick={() => setTokensEnabled(t => !t)}
-                className={`w-12 h-6 rounded-full transition ${tokensEnabled ? 'bg-green-500' : 'bg-gray-600'}`}
-              >
-                <span className={`block w-5 h-5 bg-white rounded-full transition transform ${tokensEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
-              </button>
+          )}
+
+          {isDeezer && (
+            <div className="flex items-center gap-2 text-sm text-blue-400 bg-gray-800 rounded-lg px-4 py-3">
+              <span>&#10003;</span>
+              <span>Deezer — no login required</span>
             </div>
-            {error && <p className="text-red-400 text-sm">{error}</p>}
+          )}
+
+          <div>
+            <label className="block text-sm text-gray-400 mb-2">Game length</label>
+            <div className="flex gap-3">
+              {([5, 10] as const).map(n => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setGameLength(n)}
+                  className={`flex-1 py-3 rounded-lg font-semibold transition ${
+                    gameLength === n
+                      ? 'bg-green-500 text-black'
+                      : 'bg-gray-800 text-white hover:bg-gray-700'
+                  }`}
+                >
+                  {n === 5 ? 'Short (5 cards)' : 'Long (10 cards)'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between bg-gray-800 rounded-lg px-4 py-3">
+            <span className="text-sm">Enable token system</span>
             <button
-              type="submit"
-              disabled={loading}
-              className="py-4 bg-green-500 hover:bg-green-400 text-black font-bold rounded-xl text-lg transition disabled:opacity-50"
+              type="button"
+              onClick={() => setTokensEnabled(t => !t)}
+              className={`w-12 h-6 rounded-full transition ${tokensEnabled ? 'bg-green-500' : 'bg-gray-600'}`}
             >
-              {loading ? 'Fetching playlist...' : 'Create Game'}
+              <span className={`block w-5 h-5 bg-white rounded-full transition transform ${tokensEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
             </button>
-          </form>
-        )}
+          </div>
+
+          {error && <p className="text-red-400 text-sm">{error}</p>}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="py-4 bg-green-500 hover:bg-green-400 text-black font-bold rounded-xl text-lg transition disabled:opacity-50"
+          >
+            {loading ? 'Fetching playlist...' : 'Create Game'}
+          </button>
+        </form>
       </div>
     </main>
   )

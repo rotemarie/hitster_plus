@@ -32,7 +32,6 @@ export async function exchangeCodeForToken(
     }),
   })
   const data = await res.json()
-  console.log('[spotify-pkce] token exchange status:', res.status, 'data keys:', Object.keys(data))
   if (!res.ok) throw new Error(`Token exchange failed: ${res.status} ${JSON.stringify(data)}`)
   return data.access_token
 }
