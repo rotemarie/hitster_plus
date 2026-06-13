@@ -11,29 +11,35 @@ async function fetchSpotifyTracks(playlistUrl: string, token: string): Promise<T
   if (!match) throw new Error('Invalid Spotify playlist URL')
   const playlistId = match[1]
 
-  const tracks: Track[] = []
+  type RawTrack = { name: string; artists: { name: string }[]; album: { release_date: string } }
+  const rawTracks: { title: string; artist: string; year: number }[] = []
   let url: string | null = `https://api.spotify.com/v1/playlists/${playlistId}/items?limit=100`
 
   while (url) {
     const res: Response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
     if (!res.ok) throw new Error(`Failed to fetch playlist: ${res.status}`)
-    const data: { next: string | null; items: { item: { name: string; artists: { name: string }[]; album: { release_date: string }; preview_url: string | null } | null }[] } = await res.json()
-
+    const data: { next: string | null; items: { item: RawTrack | null }[] } = await res.json()
     for (const item of data.items) {
-      const track = item?.item
-      if (!track || !track.preview_url) continue
-      tracks.push({
-        title: track.name,
-        artist: track.artists[0].name,
-        year: parseInt(track.album.release_date.slice(0, 4), 10),
-        previewUrl: track.preview_url,
+      const t = item?.item
+      if (!t) continue
+      rawTracks.push({
+        title: t.name,
+        artist: t.artists[0]?.name ?? 'Unknown',
+        year: parseInt(t.album.release_date.slice(0, 4), 10),
       })
     }
-
     url = data.next ?? null
   }
 
-  return tracks
+  // Spotify removed preview_url — fetch 30-second previews from Deezer by searching title+artist
+  const res = await fetch('/api/deezer-previews', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tracks: rawTracks }),
+  })
+  if (!res.ok) throw new Error('Failed to fetch audio previews')
+  const data = await res.json()
+  return data.tracks
 }
 
 export default function CreatePage() {
