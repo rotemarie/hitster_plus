@@ -12,15 +12,15 @@ async function fetchSpotifyTracks(playlistUrl: string, token: string): Promise<T
   const playlistId = match[1]
 
   const tracks: Track[] = []
-  let url: string | null = `https://api.spotify.com/v1/playlists/${playlistId}/tracks?limit=100`
+  let url: string | null = `https://api.spotify.com/v1/playlists/${playlistId}/items?limit=100`
 
   while (url) {
     const res: Response = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
     if (!res.ok) throw new Error(`Failed to fetch playlist: ${res.status}`)
-    const data: { next: string | null; items: { track: { name: string; artists: { name: string }[]; album: { release_date: string }; preview_url: string | null } | null }[] } = await res.json()
+    const data: { next: string | null; items: { item: { name: string; artists: { name: string }[]; album: { release_date: string }; preview_url: string | null } | null }[] } = await res.json()
 
     for (const item of data.items) {
-      const track = item?.track
+      const track = item?.item
       if (!track || !track.preview_url) continue
       tracks.push({
         title: track.name,
