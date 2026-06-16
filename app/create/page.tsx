@@ -32,6 +32,8 @@ async function fetchSpotifyTracks(playlistUrl: string, token: string): Promise<T
   }
 
   // Spotify removed preview_url — fetch 30-second previews from Deezer by searching title+artist
+  if (rawTracks.length === 0) throw new Error('Playlist is empty or has no tracks')
+
   const res = await fetch('/api/deezer-previews', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -39,6 +41,10 @@ async function fetchSpotifyTracks(playlistUrl: string, token: string): Promise<T
   })
   if (!res.ok) throw new Error('Failed to fetch audio previews')
   const data = await res.json()
+  console.log(`[create] spotify tracks: ${data.spotifyCount}, with previews: ${data.previewCount}`)
+  if (data.tracks.length === 0) {
+    throw new Error(`Found ${data.spotifyCount ?? rawTracks.length} tracks in Spotify but none matched on Deezer for previews`)
+  }
   return data.tracks
 }
 
