@@ -30,12 +30,26 @@ export function insertCardSorted(timeline: Card[], card: Card): Card[] {
   return [...timeline.slice(0, index), card, ...timeline.slice(index)]
 }
 
+function normalizeForGuess(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/\s*\(.*?\)/g, '')       // remove (parenthetical content)
+    .replace(/\s*\[.*?\]/g, '')       // remove [bracketed content]
+    .replace(/\s*-\s*(remaster(ed)?|radio edit|single|album|original|live|acoustic|version|edit|mix|feat\.?|ft\.?|explicit|clean).*/i, '')
+    .replace(/[''`]/g, '')            // remove apostrophes
+    .replace(/[^a-z0-9\s]/g, ' ')    // punctuation → space
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 export function guessMatchesTrack(
   guess: { title: string; artist: string },
   track: Track
 ): boolean {
-  const norm = (s: string) => s.toLowerCase().trim()
-  return norm(guess.title) === norm(track.title) && norm(guess.artist) === norm(track.artist)
+  return (
+    normalizeForGuess(guess.title) === normalizeForGuess(track.title) &&
+    normalizeForGuess(guess.artist) === normalizeForGuess(track.artist)
+  )
 }
 
 export function checkWinner(players: Player[], gameLength: number): Player | null {
