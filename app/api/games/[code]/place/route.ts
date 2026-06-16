@@ -74,6 +74,7 @@ export async function POST(
       name: p.name,
       cardCount: p.timeline.length,
       tokens: p.tokens,
+      timeline: p.timeline,
     })),
   }
 

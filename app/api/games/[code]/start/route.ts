@@ -24,7 +24,7 @@ export async function POST(
 
   await pusher.trigger(`game-${params.code}`, 'game-started', {
     settings: state.settings,
-    players: state.players.map(p => ({ id: p.id, name: p.name, cardCount: 0, tokens: 0 })),
+    players: state.players.map(p => ({ id: p.id, name: p.name, cardCount: 0, tokens: 0, timeline: [] })),
     activePlayerId: state.players[0].id,
   })
 

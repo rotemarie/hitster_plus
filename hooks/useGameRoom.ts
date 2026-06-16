@@ -1,13 +1,11 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { getPusherClient } from '@/lib/pusher-client'
-import { insertCardSorted } from '@/lib/game-logic'
 import type {
   ClientGameState,
   GameSettings,
   TurnResultPayload,
   PlayerSummary,
-  Card,
 } from '@/lib/types'
 
 const DEFAULT_SETTINGS: GameSettings = { gameLength: 10, tokensEnabled: false }
@@ -109,34 +107,14 @@ export function useGameRoom(roomCode: string, playerId: string) {
 
     channel.bind('turn-result', (data: TurnResultPayload) => {
       setGameState(prev => {
-        const newCard: Card = { title: data.title, artist: data.artist, year: data.year }
-        let myTimeline = prev.myTimeline
-        let myTokens = prev.myTokens
-
-        const iAmActivePlayer = prev.activePlayerId === playerId
-        const iAmChallenger = data.challengerId === playerId
-
-        if (iAmActivePlayer && data.placementCorrect && data.challengeResult !== 'correct') {
-          myTimeline = insertCardSorted(myTimeline, newCard)
-        } else if (iAmChallenger && data.challengeResult === 'correct') {
-          myTimeline = insertCardSorted(myTimeline, newCard)
-        }
-
-        if (iAmActivePlayer && data.guessCorrect) {
-          myTokens = Math.min(5, myTokens + 1)
-        }
-        if (iAmChallenger) {
-          const me = data.players.find(p => p.id === playerId)
-          if (me) myTokens = me.tokens
-        }
-
+        const me = data.players.find(p => p.id === playerId)
         return {
           ...prev,
           turnPhase: 'revealing',
           lastResult: data,
           players: data.players,
-          myTimeline,
-          myTokens,
+          myTimeline: me?.timeline ?? prev.myTimeline,
+          myTokens: me?.tokens ?? prev.myTokens,
         }
       })
     })

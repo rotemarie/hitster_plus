@@ -55,6 +55,7 @@ export interface PlayerSummary {
   name: string
   cardCount: number
   tokens: number
+  timeline: Card[]
 }
 
 export interface TurnResultPayload {

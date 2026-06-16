@@ -22,7 +22,7 @@ export async function POST(
 
   await pusher.trigger(`game-${params.code}`, 'player-joined', {
     player: { id: playerId, name },
-    players: state.players.map(p => ({ id: p.id, name: p.name, cardCount: 0, tokens: 0 })),
+    players: state.players.map(p => ({ id: p.id, name: p.name, cardCount: p.timeline.length, tokens: p.tokens, timeline: p.timeline })),
   })
 
   return NextResponse.json({ playerId })

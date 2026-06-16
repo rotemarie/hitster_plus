@@ -23,6 +23,7 @@ export async function GET(
       name: p.name,
       cardCount: p.timeline.length,
       tokens: p.tokens,
+      timeline: p.timeline,
     })),
     activePlayerId: state.players[state.activePlayerIndex]?.id ?? null,
     previewUrl: state.currentTrack?.previewUrl ?? null,
