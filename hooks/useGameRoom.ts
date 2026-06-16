@@ -149,7 +149,7 @@ export function useGameRoom(roomCode: string, playerId: string) {
     submitGuess: (title: string, artist: string) => post('guess', { title, artist }),
     skipGuess: () => post('guess', {}),
     placeCard: (position: number) => post('place', { position }),
-    callHitster: () => post('hitster', {}),
+    callHitster: (position: number) => post('hitster', { position }),
     nextTurn: () => post('next', {}),
   }
 

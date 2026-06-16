@@ -12,9 +12,8 @@ export async function POST(
   if (!state) return NextResponse.json({ error: 'Game not found' }, { status: 404 })
   if (state.phase !== 'playing') return NextResponse.json({ error: 'Game not in progress' }, { status: 400 })
 
-  const activePlayer = state.players[state.activePlayerIndex]
-  if (activePlayer.id !== playerId) return NextResponse.json({ error: 'Not your turn' }, { status: 403 })
   if (state.turnPhase !== 'revealing') return NextResponse.json({ error: 'Not in revealing phase' }, { status: 400 })
+  if (!state.players.find(p => p.id === playerId)) return NextResponse.json({ error: 'Player not found' }, { status: 403 })
 
   if (state.queue.length === 0) {
     state.phase = 'finished'

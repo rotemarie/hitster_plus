@@ -31,6 +31,7 @@ export interface PendingGuess {
 
 export interface PendingChallenge {
   challengerId: string
+  position: number
 }
 
 export interface GameState {
@@ -66,6 +67,7 @@ export interface TurnResultPayload {
   guessCorrect: boolean
   challengeResult: 'correct' | 'incorrect' | null
   challengerId: string | null
+  challengerPosition: number | null
   players: PlayerSummary[]
 }
 

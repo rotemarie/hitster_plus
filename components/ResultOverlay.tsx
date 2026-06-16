@@ -5,11 +5,10 @@ interface ResultOverlayProps {
   result: TurnResultPayload
   activePlayerName: string
   myPlayerId: string
-  isActivePlayer: boolean
   onNext: () => void
 }
 
-export function ResultOverlay({ result, activePlayerName, myPlayerId, isActivePlayer, onNext }: ResultOverlayProps) {
+export function ResultOverlay({ result, activePlayerName, myPlayerId, onNext }: ResultOverlayProps) {
   const { title, artist, year, placementCorrect, guessCorrect, challengeResult, challengerId, players } = result
 
   return (
@@ -63,17 +62,12 @@ export function ResultOverlay({ result, activePlayerName, myPlayerId, isActivePl
           </div>
         </div>
 
-        {isActivePlayer && (
-          <button
-            onClick={onNext}
-            className="py-3 bg-green-500 hover:bg-green-400 text-black font-bold rounded-xl transition"
-          >
-            Next turn
-          </button>
-        )}
-        {!isActivePlayer && (
-          <p className="text-center text-gray-500 text-sm">Waiting for {activePlayerName} to continue...</p>
-        )}
+        <button
+          onClick={onNext}
+          className="py-3 bg-green-500 hover:bg-green-400 text-black font-bold rounded-xl transition"
+        >
+          Next turn
+        </button>
       </div>
     </div>
   )

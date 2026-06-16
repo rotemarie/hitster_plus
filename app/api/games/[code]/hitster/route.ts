@@ -6,13 +6,14 @@ export async function POST(
   request: Request,
   { params }: { params: { code: string } }
 ) {
-  const { playerId } = await request.json()
+  const { playerId, position } = await request.json()
   const state = await getGame(params.code)
 
   if (!state) return NextResponse.json({ error: 'Game not found' }, { status: 404 })
   if (state.phase !== 'playing') return NextResponse.json({ error: 'Game not in progress' }, { status: 400 })
   if (state.turnPhase !== 'placing') return NextResponse.json({ error: 'Not in placing phase' }, { status: 400 })
   if (!state.settings.tokensEnabled) return NextResponse.json({ error: 'Tokens are disabled' }, { status: 400 })
+  if (typeof position !== 'number') return NextResponse.json({ error: 'Position is required' }, { status: 400 })
 
   const activePlayer = state.players[state.activePlayerIndex]
   if (activePlayer.id === playerId) return NextResponse.json({ error: 'Cannot challenge your own placement' }, { status: 400 })
@@ -25,15 +26,15 @@ export async function POST(
   if (!challenger) return NextResponse.json({ error: 'Player not found' }, { status: 404 })
   if (challenger.tokens < 1) return NextResponse.json({ error: 'Not enough tokens' }, { status: 400 })
 
-  // Spend the token immediately
   challenger.tokens -= 1
-  state.pendingChallenge = { challengerId: playerId }
+  state.pendingChallenge = { challengerId: playerId, position }
 
   await saveGame(state)
 
   await pusher.trigger(`game-${params.code}`, 'hitster-called', {
     challengerId: playerId,
     challengerName: challenger.name,
+    challengerPosition: position,
   })
 
   return NextResponse.json({ ok: true })

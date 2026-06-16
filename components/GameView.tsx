@@ -13,7 +13,7 @@ interface GameViewProps {
     submitGuess: (title: string, artist: string) => Promise<unknown>
     skipGuess: () => Promise<unknown>
     placeCard: (position: number) => Promise<unknown>
-    callHitster: () => Promise<unknown>
+    callHitster: (position: number) => Promise<unknown>
     nextTurn: () => Promise<unknown>
   }
 }
@@ -87,6 +87,7 @@ export function GameView({ gameState, myPlayerId, actions }: GameViewProps) {
           canCallHitster={myTokens > 0 && pendingChallengerName === null}
           onCallHitster={actions.callHitster}
           challengerName={pendingChallengerName}
+          activePlayerTimeline={activePlayer?.timeline ?? []}
         />
       )}
 
@@ -101,7 +102,6 @@ export function GameView({ gameState, myPlayerId, actions }: GameViewProps) {
           result={lastResult}
           activePlayerName={activePlayer?.name ?? ''}
           myPlayerId={myPlayerId}
-          isActivePlayer={isActivePlayer}
           onNext={actions.nextTurn}
         />
       )}

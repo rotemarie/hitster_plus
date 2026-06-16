@@ -28,8 +28,8 @@ export async function POST(
     : false
 
   const challenge = state.pendingChallenge
-  // A challenge is "correct" when the challenger predicted the placement was wrong and it is
-  const challengeCorrect = challenge !== null && !placementCorrect
+  // Challenge is correct when the challenger's chosen position is a valid placement
+  const challengeCorrect = challenge !== null && validatePlacement(activePlayer.timeline, card, challenge.position)
 
   // Award token for correct guess (max 5)
   if (guessCorrect) {
@@ -69,6 +69,7 @@ export async function POST(
     guessCorrect,
     challengeResult: challenge ? (challengeCorrect ? 'correct' : 'incorrect') : null,
     challengerId: challenge?.challengerId ?? null,
+    challengerPosition: challenge?.position ?? null,
     players: state.players.map(p => ({
       id: p.id,
       name: p.name,

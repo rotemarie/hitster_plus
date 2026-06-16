@@ -79,7 +79,7 @@ describe('POST /api/games/[code]/place', () => {
 
   it('gives card to challenger when HITSTER is correct (placement was wrong)', async () => {
     const state = makeState({
-      pendingChallenge: { challengerId: 'p2' },
+      pendingChallenge: { challengerId: 'p2', position: 1 },
     })
     getGame.mockResolvedValue(state)
     // Wrong placement: position 0 before 1980, but year is 1990
@@ -92,7 +92,7 @@ describe('POST /api/games/[code]/place', () => {
 
   it('active player keeps card when HITSTER is incorrect (placement was correct)', async () => {
     const state = makeState({
-      pendingChallenge: { challengerId: 'p2' },
+      pendingChallenge: { challengerId: 'p2', position: 1 },
     })
     getGame.mockResolvedValue(state)
     // Correct placement: position 1 = after 1980 card, year 1990
