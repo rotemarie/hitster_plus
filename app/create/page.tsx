@@ -31,7 +31,6 @@ async function fetchSpotifyTracks(playlistUrl: string, token: string): Promise<T
     url = data.next ?? null
   }
 
-  // Spotify removed preview_url — fetch 30-second previews from Deezer by searching title+artist
   if (rawTracks.length === 0) throw new Error('Playlist is empty or has no tracks')
 
   // Shuffle and cap to avoid Vercel function timeout on large playlists
@@ -43,30 +42,35 @@ async function fetchSpotifyTracks(playlistUrl: string, token: string): Promise<T
   })
   if (!res.ok) throw new Error('Failed to fetch audio previews')
   const data = await res.json()
-  console.log(`[create] spotify tracks: ${data.spotifyCount}, with previews: ${data.previewCount}`)
   if (data.tracks.length === 0) {
     throw new Error(`Found ${data.spotifyCount ?? rawTracks.length} tracks in Spotify but none matched on Deezer for previews`)
   }
   return data.tracks
 }
 
+type Source = 'spotify' | 'deezer' | null
+
 export default function CreatePage() {
   const router = useRouter()
+  const [source, setSource] = useState<Source>(null)
+  const [spotifyToken, setSpotifyToken] = useState<string | null>(null)
+  const [connecting, setConnecting] = useState(false)
+
+  // Form state
   const [playlistUrl, setPlaylistUrl] = useState('')
   const [hostName, setHostName] = useState('')
   const [gameLength, setGameLength] = useState<5 | 10>(10)
   const [tokensEnabled, setTokensEnabled] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [spotifyToken, setSpotifyToken] = useState<string | null>(null)
-  const [connecting, setConnecting] = useState(false)
-
-  const isSpotify = playlistUrl.includes('spotify.com')
-  const isDeezer = playlistUrl.includes('deezer.com')
 
   useEffect(() => {
     const stored = localStorage.getItem('spotify_token')
-    if (stored) { setSpotifyToken(stored); return }
+    if (stored) {
+      setSpotifyToken(stored)
+      setSource('spotify')
+      return
+    }
 
     const params = new URLSearchParams(window.location.search)
     const code = params.get('code')
@@ -81,6 +85,7 @@ export default function CreatePage() {
         localStorage.setItem('spotify_token', token)
         sessionStorage.removeItem('spotify_code_verifier')
         setSpotifyToken(token)
+        setSource('spotify')
         router.replace('/create')
       })
       .catch(() => setError('Failed to connect Spotify. Please try again.'))
@@ -112,6 +117,8 @@ export default function CreatePage() {
 
     try {
       let tracks: Track[]
+      const isSpotify = playlistUrl.includes('spotify.com')
+      const isDeezer = playlistUrl.includes('deezer.com')
 
       if (isDeezer) {
         const res = await fetch(`/api/deezer-tracks?url=${encodeURIComponent(playlistUrl)}`)
@@ -129,6 +136,7 @@ export default function CreatePage() {
         } catch (err) {
           localStorage.removeItem('spotify_token')
           setSpotifyToken(null)
+          setSource(null)
           setError(`Could not fetch playlist: ${err instanceof Error ? err.message : String(err)}`)
           setLoading(false)
           return
@@ -159,7 +167,6 @@ export default function CreatePage() {
       const data = await res.json()
       if (!res.ok) { setError(data.error); setLoading(false); return }
       localStorage.setItem(`hitster_player_${data.roomCode}`, data.playerId)
-      setLoading(false)
       router.push(`/room/${data.roomCode}`)
     } catch (err) {
       setError(`Something went wrong: ${err instanceof Error ? err.message : String(err)}`)
@@ -167,18 +174,78 @@ export default function CreatePage() {
     }
   }
 
-  if (connecting) {
+  // ── Step 1: source selection ───────────────────────────────────────────────
+  if (!source) {
     return (
-      <div className="flex items-center justify-center min-h-screen text-gray-400">
-        Connecting to Spotify...
-      </div>
+      <main className="flex flex-col items-center justify-center min-h-screen p-8">
+        <div className="w-full max-w-md flex flex-col gap-6">
+          <h1 className="text-3xl font-bold">Create a Game</h1>
+          <p className="text-gray-400">Choose your playlist source to get started.</p>
+
+          {connecting ? (
+            <p className="text-gray-400 text-center py-4">Connecting to Spotify...</p>
+          ) : (
+            <>
+              <button
+                onClick={handleConnectSpotify}
+                className="w-full py-4 bg-green-500 hover:bg-green-400 text-black font-bold rounded-xl text-lg transition"
+              >
+                Connect Spotify
+              </button>
+
+              <div className="flex items-center gap-3">
+                <hr className="flex-1 border-gray-700" />
+                <span className="text-gray-600 text-sm">or</span>
+                <hr className="flex-1 border-gray-700" />
+              </div>
+
+              <button
+                onClick={() => setSource('deezer')}
+                className="w-full py-4 bg-gray-800 hover:bg-gray-700 text-white font-semibold rounded-xl text-lg transition"
+              >
+                Use a Deezer playlist
+              </button>
+
+              {error && <p className="text-red-400 text-sm">{error}</p>}
+            </>
+          )}
+        </div>
+      </main>
     )
   }
 
+  // ── Step 2: game details ───────────────────────────────────────────────────
   return (
     <main className="flex flex-col items-center justify-center min-h-screen p-8">
       <div className="w-full max-w-md">
-        <h1 className="text-3xl font-bold mb-8">Create a Game</h1>
+        <button
+          onClick={() => { setSource(null); setError('') }}
+          className="text-sm text-gray-500 hover:text-gray-300 mb-6 transition"
+        >
+          ← Back
+        </button>
+
+        <h1 className="text-3xl font-bold mb-6">Game details</h1>
+
+        {source === 'spotify' && spotifyToken && (
+          <div className="flex items-center gap-2 text-sm text-green-400 bg-gray-800 rounded-lg px-4 py-3 mb-5">
+            <span>&#10003;</span>
+            <span>Spotify connected</span>
+            <button
+              onClick={() => { localStorage.removeItem('spotify_token'); setSpotifyToken(null); setSource(null) }}
+              className="ml-auto text-gray-500 hover:text-gray-300 text-xs"
+            >
+              Disconnect
+            </button>
+          </div>
+        )}
+
+        {source === 'deezer' && (
+          <div className="flex items-center gap-2 text-sm text-blue-400 bg-gray-800 rounded-lg px-4 py-3 mb-5">
+            <span>&#10003;</span>
+            <span>Deezer — no login required</span>
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
           <div>
@@ -198,49 +265,10 @@ export default function CreatePage() {
               className="w-full bg-gray-800 rounded-lg px-4 py-3 text-white focus:outline-none focus:ring-2 focus:ring-green-500"
               value={playlistUrl}
               onChange={e => setPlaylistUrl(e.target.value)}
-              placeholder="Paste a Spotify or Deezer playlist URL"
+              placeholder={source === 'deezer' ? 'Paste a Deezer playlist URL' : 'Paste a Spotify playlist URL'}
               required
             />
-            <p className="text-xs text-gray-500 mt-1">
-              Supports Spotify and Deezer playlists
-            </p>
           </div>
-
-          {isSpotify && (
-            <div className="bg-gray-800 rounded-lg px-4 py-3">
-              {spotifyToken ? (
-                <div className="flex items-center gap-2 text-sm text-green-400">
-                  <span>&#10003;</span>
-                  <span>Spotify connected</span>
-                  <button
-                    type="button"
-                    onClick={() => { localStorage.removeItem('spotify_token'); setSpotifyToken(null) }}
-                    className="ml-auto text-gray-500 hover:text-gray-300 text-xs"
-                  >
-                    Disconnect
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center justify-between gap-3">
-                  <span className="text-sm text-gray-400">Spotify required for this URL</span>
-                  <button
-                    type="button"
-                    onClick={handleConnectSpotify}
-                    className="px-4 py-2 bg-green-500 hover:bg-green-400 text-black font-semibold rounded-lg text-sm transition shrink-0"
-                  >
-                    Connect Spotify
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {isDeezer && (
-            <div className="flex items-center gap-2 text-sm text-blue-400 bg-gray-800 rounded-lg px-4 py-3">
-              <span>&#10003;</span>
-              <span>Deezer — no login required</span>
-            </div>
-          )}
 
           <div>
             <label className="block text-sm text-gray-400 mb-2">Game length</label>
