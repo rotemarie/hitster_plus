@@ -22,6 +22,10 @@ export async function POST(
     return NextResponse.json({ error: 'Someone already called HITSTER this turn' }, { status: 409 })
   }
 
+  if (position === state.previewedPosition) {
+    return NextResponse.json({ error: 'Must choose a different slot than the active player' }, { status: 400 })
+  }
+
   const challenger = state.players.find(p => p.id === playerId)
   if (!challenger) return NextResponse.json({ error: 'Player not found' }, { status: 404 })
   if (challenger.tokens < 1) return NextResponse.json({ error: 'Not enough tokens' }, { status: 400 })

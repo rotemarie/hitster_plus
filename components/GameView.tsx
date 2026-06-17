@@ -162,6 +162,7 @@ export function GameView({ gameState, myPlayerId, actions }: GameViewProps) {
           challengerName={pendingChallengerName}
           activePlayerTimeline={activePlayer?.timeline ?? []}
           challengeResolved={challengeResolved}
+          previewedPosition={previewedPosition}
         />
       )}
 

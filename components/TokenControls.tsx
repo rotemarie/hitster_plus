@@ -11,9 +11,13 @@ interface TokenControlsProps {
   challengerName?: string | null
   activePlayerTimeline: Card[]
   challengeResolved: boolean
+  previewedPosition?: number | null
 }
 
-export function TokenControls({ tokens, canCallHitster, onCallHitster, onPass, challengerName, activePlayerTimeline, challengeResolved }: TokenControlsProps) {
+export function TokenControls({
+  tokens, canCallHitster, onCallHitster, onPass,
+  challengerName, activePlayerTimeline, challengeResolved, previewedPosition,
+}: TokenControlsProps) {
   const [picking, setPicking] = useState(false)
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null)
   const [passed, setPassed] = useState(false)
@@ -40,6 +44,39 @@ export function TokenControls({ tokens, canCallHitster, onCallHitster, onPass, c
     )
   }
 
+  function renderSlot(i: number) {
+    const isActiveSlot = previewedPosition != null && i === previewedPosition
+    return (
+      <div key={i} className="flex items-center gap-1 flex-shrink-0">
+        {isActiveSlot ? (
+          <div
+            className="w-6 h-14 rounded flex items-center justify-center border-2 border-purple-500 bg-purple-500/20 cursor-not-allowed"
+            title="Active player chose this slot"
+          >
+            <span className="text-purple-400 text-xs">▼</span>
+          </div>
+        ) : (
+          <button
+            onClick={() => setSelectedSlot(i === selectedSlot ? null : i)}
+            className={`w-6 h-14 rounded flex items-center justify-center transition border-2 ${
+              selectedSlot === i
+                ? 'border-yellow-400 bg-yellow-400/20'
+                : 'border-dashed border-gray-600 hover:border-gray-400'
+            }`}
+          >
+            {selectedSlot === i && <span className="text-yellow-400 text-xs">▼</span>}
+          </button>
+        )}
+        {i < activePlayerTimeline.length && (
+          <div className="bg-gray-700 rounded-lg px-2 py-1.5 text-center min-w-[64px]">
+            <p className="text-blue-400 font-bold text-sm">{activePlayerTimeline[i].year}</p>
+            <p className="text-xs text-gray-400 truncate max-w-[56px]">{cleanTitle(activePlayerTimeline[i].title)}</p>
+          </div>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="bg-gray-800 rounded-2xl p-5 flex flex-col gap-3">
       <div className="flex items-center justify-between">
@@ -57,26 +94,7 @@ export function TokenControls({ tokens, canCallHitster, onCallHitster, onPass, c
         <div className="flex flex-col gap-3">
           <p className="text-sm text-gray-300 text-center">Where do YOU think the card goes?</p>
           <div className="flex items-center gap-1 overflow-x-auto pb-1">
-            {Array.from({ length: slotCount }, (_, i) => (
-              <div key={i} className="flex items-center gap-1 flex-shrink-0">
-                <button
-                  onClick={() => setSelectedSlot(i === selectedSlot ? null : i)}
-                  className={`w-6 h-14 rounded flex items-center justify-center transition border-2 ${
-                    selectedSlot === i
-                      ? 'border-yellow-400 bg-yellow-400/20'
-                      : 'border-dashed border-gray-600 hover:border-gray-400'
-                  }`}
-                >
-                  {selectedSlot === i && <span className="text-yellow-400 text-xs">▼</span>}
-                </button>
-                {i < activePlayerTimeline.length && (
-                  <div className="bg-gray-700 rounded-lg px-2 py-1.5 text-center min-w-[64px]">
-                    <p className="text-blue-400 font-bold text-sm">{activePlayerTimeline[i].year}</p>
-                    <p className="text-xs text-gray-400 truncate max-w-[56px]">{cleanTitle(activePlayerTimeline[i].title)}</p>
-                  </div>
-                )}
-              </div>
-            ))}
+            {Array.from({ length: slotCount }, (_, i) => renderSlot(i))}
           </div>
           <div className="flex gap-2">
             <button

@@ -116,6 +116,32 @@ describe('POST /api/games/[code]/place', () => {
     expect(saved.players[1].timeline).toHaveLength(0) // Bob gets nothing
   })
 
+  it('active player keeps card when both placements are valid (same-year tie)', async () => {
+    // Timeline: [1980, 1995, 2000]. New song: 1995.
+    // Active player: position 2 (between 1995 and 2000) — valid
+    // Challenger:    position 1 (between 1980 and 1995) — also valid
+    // Active player should win because they placed correctly.
+    const state = makeState({
+      players: [
+        { id: 'p1', name: 'Alice', timeline: [
+          { title: 'A', artist: 'X', year: 1980 },
+          { title: 'B', artist: 'X', year: 1995 },
+          { title: 'C', artist: 'X', year: 2000 },
+        ], tokens: 0 },
+        { id: 'p2', name: 'Bob', timeline: [], tokens: 2 },
+      ],
+      currentTrack: { title: 'New Song', artist: 'Artist', year: 1995, previewUrl: 'https://preview' },
+      previewedPosition: 2, // between 1995 and 2000 — valid for year 1995
+      passedPlayerIds: [],
+      pendingChallenge: { challengerId: 'p2', position: 1 }, // between 1980 and 1995 — also valid
+    })
+    getGame.mockResolvedValue(state)
+    await POST(makeRequest('ABC123', 'p1'), { params: { code: 'ABC123' } })
+    const saved: GameState = mockSave.mock.calls[0][0]
+    expect(saved.players[0].timeline).toHaveLength(4) // Alice gets the card
+    expect(saved.players[1].timeline).toHaveLength(0) // Bob gets nothing
+  })
+
   it('awards a token when guess is correct', async () => {
     const state = makeState({
       previewedPosition: 1,

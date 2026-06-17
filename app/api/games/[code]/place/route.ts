@@ -45,14 +45,17 @@ export async function POST(
 
   const challenge = state.pendingChallenge
   const challengeCorrect = challenge !== null && validatePlacement(activePlayer.timeline, card, challenge.position)
+  // Challenger wins ONLY if the active player placed wrong AND the challenger placed right.
+  // If the active player is correct (even when the challenger also found a valid slot), active player keeps the card.
+  const challengeWins = challenge !== null && challengeCorrect && !placementCorrect
 
   if (guessCorrect) {
     const player = state.players.find(p => p.id === playerId)!
     player.tokens = Math.min(5, player.tokens + 1)
   }
 
-  if (challenge && challengeCorrect) {
-    const challenger = state.players.find(p => p.id === challenge.challengerId)!
+  if (challengeWins) {
+    const challenger = state.players.find(p => p.id === challenge!.challengerId)!
     challenger.timeline = insertCardSorted(challenger.timeline, card)
   } else if (placementCorrect) {
     activePlayer.timeline = insertCardSorted(activePlayer.timeline, card)
@@ -79,7 +82,7 @@ export async function POST(
     year: track.year,
     placementCorrect,
     guessCorrect,
-    challengeResult: challenge ? (challengeCorrect ? 'correct' : 'incorrect') : null,
+    challengeResult: challenge ? (challengeWins ? 'correct' : 'incorrect') : null,
     challengerId: challenge?.challengerId ?? null,
     challengerPosition: challenge?.position ?? null,
     players: state.players.map(p => ({
