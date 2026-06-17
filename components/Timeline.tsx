@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import type { Card } from '@/lib/types'
+import { cleanTitle } from '@/lib/game-logic'
 
 interface TimelineProps {
   timeline: Card[]
@@ -50,7 +51,7 @@ export function Timeline({ timeline, isActivePlayer, onPlace, disabled = false }
             {slotIndex < timeline.length && (
               <div className="bg-gray-800 border border-gray-700 rounded-xl px-3 py-2 text-center min-w-[80px]">
                 <p className="text-green-400 font-bold text-lg">{timeline[slotIndex].year}</p>
-                <p className="text-xs text-gray-400 truncate max-w-[70px]">{timeline[slotIndex].title}</p>
+                <p className="text-xs text-gray-400 truncate max-w-[70px]">{cleanTitle(timeline[slotIndex].title)}</p>
               </div>
             )}
           </div>

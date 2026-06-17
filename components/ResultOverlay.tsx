@@ -1,5 +1,6 @@
 'use client'
 import type { TurnResultPayload } from '@/lib/types'
+import { cleanTitle } from '@/lib/game-logic'
 
 interface ResultOverlayProps {
   result: TurnResultPayload
@@ -16,7 +17,7 @@ export function ResultOverlay({ result, activePlayerName, myPlayerId, onNext }: 
       <div className="bg-gray-900 border border-gray-700 rounded-3xl p-8 max-w-sm w-full flex flex-col gap-5">
         <div className="text-center">
           <p className="text-gray-400 text-sm mb-1">The song was</p>
-          <h2 className="text-2xl font-bold">{title}</h2>
+          <h2 className="text-2xl font-bold">{cleanTitle(title)}</h2>
           <p className="text-gray-300">{artist}</p>
           <p className="text-4xl font-bold text-green-400 mt-2">{year}</p>
         </div>

@@ -30,16 +30,36 @@ export function insertCardSorted(timeline: Card[], card: Card): Card[] {
   return [...timeline.slice(0, index), card, ...timeline.slice(index)]
 }
 
-function normalizeForGuess(s: string): string {
+const VERSION_KEYWORDS = 'remaster(?:ed)?|radio(?: edit)?|single|album|original|live|acoustic|version|edit|mix|feat\\.?|ft\\.?|explicit|clean|mono|stereo|demo|instrumental|extended|deluxe|bonus|anniversary|special'
+
+// Returns the core title stripped of version/edition suffixes, preserving original casing.
+export function cleanTitle(s: string): string {
   return s
+    .replace(/\s*\(.*?\)/g, '')
+    .replace(/\s*\[.*?\]/g, '')
+    // handles both "- Remastered 2019" and "- 2019 Remaster"
+    .replace(new RegExp(`\\s*-\\s*(?:\\d{4}\\s*)?(${VERSION_KEYWORDS}).*`, 'gi'), '')
+    .replace(new RegExp(`\\s*-\\s*(${VERSION_KEYWORDS})(?:\\s+\\d{4})?.*`, 'gi'), '')
+    .replace(/^["""]+|["""]+$/g, '')  // strip leading/trailing quote chars (e.g. "Heroes")
+    .trim()
+}
+
+function normalizeTitle(s: string): string {
+  return cleanTitle(s)
     .toLowerCase()
-    .replace(/\s*\(.*?\)/g, '')       // remove (parenthetical content)
-    .replace(/\s*\[.*?\]/g, '')       // remove [bracketed content]
-    .replace(/\s*-\s*(remaster(ed)?|radio edit|single|album|original|live|acoustic|version|edit|mix|feat\.?|ft\.?|explicit|clean).*/i, '')
-    .replace(/[''`]/g, '')            // remove apostrophes
-    .replace(/[^a-z0-9\s]/g, ' ')    // punctuation → space
+    .replace(/[''`]/g, '')
+    .replace(/[^a-z0-9\s]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
+}
+
+// Strips spaces and punctuation so "Sound Garden" matches "Soundgarden"
+function normalizeArtist(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/\s*feat\.?.*/i, '')
+    .replace(/\s*ft\.?.*/i, '')
+    .replace(/[^a-z0-9]/g, '')
 }
 
 export function guessMatchesTrack(
@@ -47,8 +67,8 @@ export function guessMatchesTrack(
   track: Track
 ): boolean {
   return (
-    normalizeForGuess(guess.title) === normalizeForGuess(track.title) &&
-    normalizeForGuess(guess.artist) === normalizeForGuess(track.artist)
+    normalizeTitle(guess.title) === normalizeTitle(track.title) &&
+    normalizeArtist(guess.artist) === normalizeArtist(track.artist)
   )
 }
 

@@ -1,4 +1,5 @@
 'use client'
+import { cleanTitle } from '@/lib/game-logic'
 import { AudioPlayer } from './AudioPlayer'
 import { Timeline } from './Timeline'
 import { GuessForm } from './GuessForm'
@@ -73,7 +74,7 @@ export function GameView({ gameState, myPlayerId, actions }: GameViewProps) {
               {p.timeline.map((card, i) => (
                 <div key={i} className="bg-gray-900 border border-gray-700 rounded-xl px-2 py-1.5 text-center min-w-[72px] flex-shrink-0">
                   <p className="text-blue-400 font-bold text-base">{card.year}</p>
-                  <p className="text-xs text-gray-500 truncate max-w-[60px]">{card.title}</p>
+                  <p className="text-xs text-gray-500 truncate max-w-[60px]">{cleanTitle(card.title)}</p>
                 </div>
               ))}
             </div>
