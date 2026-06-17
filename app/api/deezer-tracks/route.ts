@@ -29,6 +29,7 @@ export async function GET(request: Request) {
         artist: track.artist?.name ?? 'Unknown',
         year,
         previewUrl: track.preview,
+        deezerId: track.id,
       })
     }
 

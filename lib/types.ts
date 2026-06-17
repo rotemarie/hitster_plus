@@ -14,6 +14,7 @@ export interface Card {
 
 export interface Track extends Card {
   previewUrl: string
+  deezerId?: number
 }
 
 export interface Player {
@@ -47,6 +48,7 @@ export interface GameState {
   pendingGuess: PendingGuess | null
   pendingChallenge: PendingChallenge | null
   previewedPosition: number | null
+  passedPlayerIds: string[]
   winnerId: string | null
 }
 
@@ -104,4 +106,5 @@ export interface ClientGameState {
   pendingChallengerName: string | null
   pendingChallengerPosition: number | null
   previewedPosition: number | null
+  challengeResolved: boolean
 }

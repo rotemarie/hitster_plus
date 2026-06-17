@@ -19,6 +19,7 @@ export async function POST(
 
   state.turnPhase = 'previewing'
   state.previewedPosition = position
+  state.passedPlayerIds = []
 
   await saveGame(state)
 

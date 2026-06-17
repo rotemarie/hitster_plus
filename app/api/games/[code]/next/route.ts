@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getGame, saveGame } from '@/lib/redis'
 import { pusher } from '@/lib/pusher'
+import { fetchFreshPreviewUrl } from '@/lib/deezer'
 
 export async function POST(
   request: Request,
@@ -29,12 +30,17 @@ export async function POST(
   const nextTrack = state.queue.shift()!
   state.currentTrack = nextTrack
   state.turnPhase = 'listening'
+  state.passedPlayerIds = []
+
+  // Re-fetch a fresh preview URL so CDN links never go stale
+  const freshUrl = nextTrack.deezerId ? await fetchFreshPreviewUrl(nextTrack.deezerId) : null
+  const previewUrl = freshUrl ?? nextTrack.previewUrl
 
   await saveGame(state)
 
   await pusher.trigger(`game-${params.code}`, 'turn-started', {
     activePlayerId: state.players[state.activePlayerIndex].id,
-    previewUrl: nextTrack.previewUrl,
+    previewUrl,
   })
 
   return NextResponse.json({ ok: true })

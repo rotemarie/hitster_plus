@@ -34,10 +34,12 @@ async function fetchSpotifyTracks(playlistUrl: string, token: string): Promise<T
   // Spotify removed preview_url — fetch 30-second previews from Deezer by searching title+artist
   if (rawTracks.length === 0) throw new Error('Playlist is empty or has no tracks')
 
+  // Shuffle and cap to avoid Vercel function timeout on large playlists
+  const shuffled = rawTracks.sort(() => Math.random() - 0.5).slice(0, 60)
   const res = await fetch('/api/deezer-previews', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ tracks: rawTracks }),
+    body: JSON.stringify({ tracks: shuffled }),
   })
   if (!res.ok) throw new Error('Failed to fetch audio previews')
   const data = await res.json()

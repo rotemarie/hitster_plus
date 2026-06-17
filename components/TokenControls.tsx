@@ -1,27 +1,44 @@
 'use client'
 import { useState } from 'react'
 import type { Card } from '@/lib/types'
+import { cleanTitle } from '@/lib/game-logic'
 
 interface TokenControlsProps {
   tokens: number
   canCallHitster: boolean
   onCallHitster: (position: number) => void
+  onPass: () => void
   challengerName?: string | null
   activePlayerTimeline: Card[]
+  challengeResolved: boolean
 }
 
-export function TokenControls({ tokens, canCallHitster, onCallHitster, challengerName, activePlayerTimeline }: TokenControlsProps) {
+export function TokenControls({ tokens, canCallHitster, onCallHitster, onPass, challengerName, activePlayerTimeline, challengeResolved }: TokenControlsProps) {
   const [picking, setPicking] = useState(false)
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null)
+  const [passed, setPassed] = useState(false)
 
-  function handleConfirm() {
+  function handleConfirmHitster() {
     if (selectedSlot === null) return
     onCallHitster(selectedSlot)
     setPicking(false)
     setSelectedSlot(null)
   }
 
+  function handlePass() {
+    setPassed(true)
+    onPass()
+  }
+
   const slotCount = activePlayerTimeline.length + 1
+
+  if (challengeResolved && !challengerName) {
+    return (
+      <div className="bg-gray-800 rounded-2xl p-4 text-center text-gray-500 text-sm">
+        Challenge phase over — waiting for active player to confirm
+      </div>
+    )
+  }
 
   return (
     <div className="bg-gray-800 rounded-2xl p-5 flex flex-col gap-3">
@@ -34,6 +51,8 @@ export function TokenControls({ tokens, canCallHitster, onCallHitster, challenge
         <p className="text-center text-yellow-400 font-semibold py-2">
           {challengerName} called HITSTER!
         </p>
+      ) : passed ? (
+        <p className="text-center text-gray-500 text-sm py-1">You passed — waiting for others...</p>
       ) : picking ? (
         <div className="flex flex-col gap-3">
           <p className="text-sm text-gray-300 text-center">Where do YOU think the card goes?</p>
@@ -53,7 +72,7 @@ export function TokenControls({ tokens, canCallHitster, onCallHitster, challenge
                 {i < activePlayerTimeline.length && (
                   <div className="bg-gray-700 rounded-lg px-2 py-1.5 text-center min-w-[64px]">
                     <p className="text-blue-400 font-bold text-sm">{activePlayerTimeline[i].year}</p>
-                    <p className="text-xs text-gray-400 truncate max-w-[56px]">{activePlayerTimeline[i].title}</p>
+                    <p className="text-xs text-gray-400 truncate max-w-[56px]">{cleanTitle(activePlayerTimeline[i].title)}</p>
                   </div>
                 )}
               </div>
@@ -67,7 +86,7 @@ export function TokenControls({ tokens, canCallHitster, onCallHitster, challenge
               Cancel
             </button>
             <button
-              onClick={handleConfirm}
+              onClick={handleConfirmHitster}
               disabled={selectedSlot === null}
               className="flex-1 py-2 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-xl text-sm transition disabled:opacity-40"
             >
@@ -75,17 +94,26 @@ export function TokenControls({ tokens, canCallHitster, onCallHitster, challenge
             </button>
           </div>
         </div>
-      ) : canCallHitster ? (
-        <button
-          onClick={() => setPicking(true)}
-          className="py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-xl transition"
-        >
-          Call HITSTER! (spend 1 token)
-        </button>
       ) : (
-        <p className="text-center text-gray-500 text-sm py-1">
-          {tokens === 0 ? 'No tokens to challenge with' : 'Waiting for active player...'}
-        </p>
+        <div className="flex flex-col gap-2">
+          {canCallHitster && (
+            <button
+              onClick={() => setPicking(true)}
+              className="py-3 bg-yellow-500 hover:bg-yellow-400 text-black font-bold rounded-xl transition"
+            >
+              Call HITSTER! (spend 1 token)
+            </button>
+          )}
+          {!canCallHitster && (
+            <p className="text-center text-gray-500 text-sm">No tokens to challenge with</p>
+          )}
+          <button
+            onClick={handlePass}
+            className="py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 rounded-xl text-sm transition"
+          >
+            Pass (no challenge)
+          </button>
+        </div>
       )}
     </div>
   )

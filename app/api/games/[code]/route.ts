@@ -29,6 +29,8 @@ export async function GET(
     previewUrl: state.currentTrack?.previewUrl ?? null,
     turnPhase: state.turnPhase,
     previewedPosition: state.previewedPosition ?? null,
+    challengeResolved: state.pendingChallenge !== null ||
+      state.passedPlayerIds.length >= state.players.length - 1,
     winnerId: state.winnerId,
     // Own full timeline only — other players' years stay hidden
     myTimeline: me?.timeline ?? [],

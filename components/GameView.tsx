@@ -14,16 +14,27 @@ interface GameViewProps {
     submitGuess: (title: string, artist: string) => Promise<unknown>
     skipGuess: () => Promise<unknown>
     previewPlacement: (position: number) => Promise<unknown>
-    placeCard: () => Promise<unknown>
+    placeCard: (position?: number) => Promise<unknown>
     callHitster: (position: number) => Promise<unknown>
+    pass: () => Promise<unknown>
     nextTurn: () => Promise<unknown>
   }
 }
 
 export function GameView({ gameState, myPlayerId, actions }: GameViewProps) {
-  const { players, activePlayerId, previewUrl, turnPhase, lastResult, settings, myTimeline, myTokens, pendingChallengerName, pendingChallengerPosition, previewedPosition } = gameState
+  const { players, activePlayerId, previewUrl, turnPhase, lastResult, settings, myTimeline, myTokens, pendingChallengerName, pendingChallengerPosition, previewedPosition, challengeResolved } = gameState
   const isActivePlayer = activePlayerId === myPlayerId
   const activePlayer = players.find(p => p.id === activePlayerId)
+  const tokensEnabled = settings.tokensEnabled
+
+  // When tokens are disabled, active player places directly (no preview step)
+  const handleTimelinePlace = (position: number) => {
+    if (tokensEnabled) {
+      return actions.previewPlacement(position)
+    } else {
+      return actions.placeCard(position)
+    }
+  }
 
   return (
     <div className="flex flex-col min-h-screen p-4 gap-4 max-w-lg mx-auto">
@@ -58,12 +69,12 @@ export function GameView({ gameState, myPlayerId, actions }: GameViewProps) {
         </div>
       )}
 
-      {/* Active player's own timeline */}
+      {/* Active player's own timeline — interactive during placing, read-only during previewing */}
       {(turnPhase === 'placing' || turnPhase === 'previewing') && (
         <Timeline
           timeline={myTimeline}
           isActivePlayer={isActivePlayer && turnPhase === 'placing'}
-          onPlace={actions.previewPlacement}
+          onPlace={handleTimelinePlace}
           disabled={!isActivePlayer || turnPhase !== 'placing'}
           challengerSlot={isActivePlayer && turnPhase === 'placing' ? pendingChallengerPosition : null}
           challengerName={pendingChallengerName}
@@ -71,24 +82,29 @@ export function GameView({ gameState, myPlayerId, actions }: GameViewProps) {
         />
       )}
 
-      {/* Active player: picking phase status */}
+      {/* Active player: picking slot */}
       {isActivePlayer && turnPhase === 'placing' && (
         <div className="bg-gray-800 rounded-2xl p-4 text-center text-gray-400 text-sm">
-          Pick a slot and lock it in — opponents will then get a chance to challenge
+          {tokensEnabled
+            ? 'Pick a slot and lock it in — opponents will then get a chance to challenge'
+            : 'Pick a slot to place the card'}
         </div>
       )}
 
-      {/* Active player: previewing phase — waiting for challengers, confirm button */}
+      {/* Active player: previewing — wait for opponents, then confirm */}
       {isActivePlayer && turnPhase === 'previewing' && (
         <div className="flex flex-col gap-3">
           <div className="bg-gray-800 rounded-2xl p-4 text-center text-gray-400 text-sm">
             {pendingChallengerName
               ? `${pendingChallengerName} is challenging you!`
-              : 'Waiting for opponents to decide...'}
+              : challengeResolved
+                ? 'All opponents passed — ready to confirm'
+                : 'Waiting for opponents to decide...'}
           </div>
           <button
             onClick={() => actions.placeCard()}
-            className="py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl transition"
+            disabled={!challengeResolved}
+            className="py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl transition disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Confirm placement
           </button>
@@ -98,7 +114,6 @@ export function GameView({ gameState, myPlayerId, actions }: GameViewProps) {
       {/* Other players' timelines */}
       {players.filter(p => p.id !== myPlayerId).map(p => {
         const isThisPlayerActive = p.id === activePlayerId
-        // Show where the active player locked in their slot
         const showPreviewedSlot = isThisPlayerActive && turnPhase === 'previewing' && previewedPosition !== null
 
         return (
@@ -137,14 +152,16 @@ export function GameView({ gameState, myPlayerId, actions }: GameViewProps) {
         )
       })}
 
-      {/* HITSTER controls — only available once active player has locked in */}
-      {!isActivePlayer && turnPhase === 'previewing' && settings.tokensEnabled && (
+      {/* HITSTER / Pass controls — shown to non-active players during previewing phase */}
+      {!isActivePlayer && turnPhase === 'previewing' && tokensEnabled && (
         <TokenControls
           tokens={myTokens}
           canCallHitster={myTokens > 0 && pendingChallengerName === null}
           onCallHitster={actions.callHitster}
+          onPass={actions.pass}
           challengerName={pendingChallengerName}
           activePlayerTimeline={activePlayer?.timeline ?? []}
+          challengeResolved={challengeResolved}
         />
       )}
 

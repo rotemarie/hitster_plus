@@ -8,7 +8,8 @@ export async function POST(
   request: Request,
   { params }: { params: { code: string } }
 ) {
-  const { playerId } = await request.json()
+  const body = await request.json()
+  const { playerId, position: bodyPosition } = body
   const state = await getGame(params.code)
 
   if (!state) return NextResponse.json({ error: 'Game not found' }, { status: 404 })
@@ -16,10 +17,23 @@ export async function POST(
 
   const activePlayer = state.players[state.activePlayerIndex]
   if (activePlayer.id !== playerId) return NextResponse.json({ error: 'Not your turn' }, { status: 403 })
-  if (state.turnPhase !== 'previewing') return NextResponse.json({ error: 'Not in previewing phase' }, { status: 400 })
-  if (state.previewedPosition === null) return NextResponse.json({ error: 'No position locked in' }, { status: 400 })
 
-  const position = state.previewedPosition
+  let position: number
+
+  if (state.turnPhase === 'placing') {
+    // No-token flow: position comes directly from the request
+    if (typeof bodyPosition !== 'number') return NextResponse.json({ error: 'Position is required' }, { status: 400 })
+    position = bodyPosition
+  } else if (state.turnPhase === 'previewing') {
+    if (state.previewedPosition === null) return NextResponse.json({ error: 'No position locked in' }, { status: 400 })
+    const nonActiveCount = state.players.length - 1
+    const resolved = state.pendingChallenge !== null || state.passedPlayerIds.length >= nonActiveCount
+    if (!resolved) return NextResponse.json({ error: 'Waiting for opponents to decide' }, { status: 400 })
+    position = state.previewedPosition
+  } else {
+    return NextResponse.json({ error: 'Not in placing or previewing phase' }, { status: 400 })
+  }
+
   const track = state.currentTrack!
   const card: Card = { title: track.title, artist: track.artist, year: track.year }
 
@@ -30,25 +44,19 @@ export async function POST(
     : false
 
   const challenge = state.pendingChallenge
-  // Challenge is correct when the challenger's chosen position is a valid placement
   const challengeCorrect = challenge !== null && validatePlacement(activePlayer.timeline, card, challenge.position)
 
-  // Award token for correct guess (max 5)
   if (guessCorrect) {
     const player = state.players.find(p => p.id === playerId)!
     player.tokens = Math.min(5, player.tokens + 1)
   }
 
-  // Determine who gets the card
   if (challenge && challengeCorrect) {
-    // Challenger earns the card — auto-place in sorted order
     const challenger = state.players.find(p => p.id === challenge.challengerId)!
     challenger.timeline = insertCardSorted(challenger.timeline, card)
   } else if (placementCorrect) {
-    // Active player keeps it (regardless of wrong HITSTER call)
     activePlayer.timeline = insertCardSorted(activePlayer.timeline, card)
   }
-  // else: card discarded (wrong placement, no challenge)
 
   const winner = checkWinner(state.players, state.settings.gameLength)
 
@@ -56,6 +64,7 @@ export async function POST(
   state.pendingGuess = null
   state.pendingChallenge = null
   state.previewedPosition = null
+  state.passedPlayerIds = []
 
   if (winner) {
     state.phase = 'finished'

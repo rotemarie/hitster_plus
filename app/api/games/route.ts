@@ -36,6 +36,7 @@ export async function POST(request: Request) {
     pendingGuess: null,
     pendingChallenge: null,
     previewedPosition: null,
+    passedPlayerIds: [],
     winnerId: null,
   }
 

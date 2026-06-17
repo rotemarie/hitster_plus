@@ -36,6 +36,8 @@ export async function POST(
     challengerName: challenger.name,
     challengerPosition: position,
   })
+  // HITSTER resolves the challenge immediately — active player can now confirm
+  await pusher.trigger(`game-${params.code}`, 'challenge-resolved', {})
 
   return NextResponse.json({ ok: true })
 }

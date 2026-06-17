@@ -39,6 +39,7 @@ function makeState(overrides: Partial<GameState> = {}): GameState {
     pendingGuess: null,
     pendingChallenge: null,
     previewedPosition: 1, // after the 1980 card — correct placement for year 1990
+    passedPlayerIds: ['p2'], // opponent passed → challenge resolved
     winnerId: null,
     ...overrides,
   }
@@ -56,14 +57,20 @@ describe('POST /api/games/[code]/place', () => {
     expect(res.status).toBe(403)
   })
 
-  it('returns 400 when not in previewing phase', async () => {
+  it('returns 400 when not in placing or previewing phase', async () => {
     getGame.mockResolvedValue(makeState({ turnPhase: 'listening' }))
     const res = await POST(makeRequest('ABC123', 'p1'), { params: { code: 'ABC123' } })
     expect(res.status).toBe(400)
   })
 
-  it('returns 400 when no position has been locked in', async () => {
+  it('returns 400 when previewing but no position locked in', async () => {
     getGame.mockResolvedValue(makeState({ previewedPosition: null }))
+    const res = await POST(makeRequest('ABC123', 'p1'), { params: { code: 'ABC123' } })
+    expect(res.status).toBe(400)
+  })
+
+  it('returns 400 when previewing but opponents have not yet decided', async () => {
+    getGame.mockResolvedValue(makeState({ passedPlayerIds: [] })) // p2 hasn't passed
     const res = await POST(makeRequest('ABC123', 'p1'), { params: { code: 'ABC123' } })
     expect(res.status).toBe(400)
   })
