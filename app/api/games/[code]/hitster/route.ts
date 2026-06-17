@@ -11,7 +11,7 @@ export async function POST(
 
   if (!state) return NextResponse.json({ error: 'Game not found' }, { status: 404 })
   if (state.phase !== 'playing') return NextResponse.json({ error: 'Game not in progress' }, { status: 400 })
-  if (state.turnPhase !== 'placing') return NextResponse.json({ error: 'Not in placing phase' }, { status: 400 })
+  if (state.turnPhase !== 'previewing') return NextResponse.json({ error: 'Not in previewing phase' }, { status: 400 })
   if (!state.settings.tokensEnabled) return NextResponse.json({ error: 'Tokens are disabled' }, { status: 400 })
   if (typeof position !== 'number') return NextResponse.json({ error: 'Position is required' }, { status: 400 })
 

@@ -1,5 +1,5 @@
 export type GamePhase = 'lobby' | 'playing' | 'finished'
-export type TurnPhase = 'listening' | 'placing' | 'revealing'
+export type TurnPhase = 'listening' | 'placing' | 'previewing' | 'revealing'
 
 export interface GameSettings {
   gameLength: 5 | 10
@@ -46,6 +46,7 @@ export interface GameState {
   turnPhase: TurnPhase
   pendingGuess: PendingGuess | null
   pendingChallenge: PendingChallenge | null
+  previewedPosition: number | null
   winnerId: string | null
 }
 
@@ -102,4 +103,5 @@ export interface ClientGameState {
   myTokens: number
   pendingChallengerName: string | null
   pendingChallengerPosition: number | null
+  previewedPosition: number | null
 }

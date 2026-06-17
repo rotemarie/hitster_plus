@@ -10,9 +10,10 @@ interface TimelineProps {
   disabled?: boolean
   challengerSlot?: number | null
   challengerName?: string | null
+  previewedSlot?: number | null
 }
 
-export function Timeline({ timeline, isActivePlayer, onPlace, disabled = false, challengerSlot, challengerName }: TimelineProps) {
+export function Timeline({ timeline, isActivePlayer, onPlace, disabled = false, challengerSlot, challengerName, previewedSlot }: TimelineProps) {
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null)
 
   function handlePlace() {
@@ -23,6 +24,7 @@ export function Timeline({ timeline, isActivePlayer, onPlace, disabled = false, 
 
   const slotCount = timeline.length + 1
   const hasChallengerSlot = challengerSlot !== null && challengerSlot !== undefined
+  const hasPreviewedSlot = previewedSlot !== null && previewedSlot !== undefined
 
   return (
     <div className="flex flex-col gap-4">
@@ -41,10 +43,20 @@ export function Timeline({ timeline, isActivePlayer, onPlace, disabled = false, 
       <div className="flex items-center gap-1 overflow-x-auto pb-2">
         {Array.from({ length: slotCount }, (_, slotIndex) => {
           const isChallengersSlot = hasChallengerSlot && slotIndex === challengerSlot
-          const isBlocked = isActivePlayer && isChallengersSlot
+          const isPreviewedSlot = hasPreviewedSlot && slotIndex === previewedSlot
 
           return (
             <div key={slotIndex} className="flex items-center gap-1 flex-shrink-0">
+              {/* Previewed slot — shown to active player when disabled (previewing phase) */}
+              {isPreviewedSlot && disabled && (
+                <div
+                  className="w-6 h-16 rounded flex items-center justify-center border-2 border-purple-500 bg-purple-500/20"
+                  title="Your locked-in position"
+                >
+                  <span className="text-purple-400 text-xs">▼</span>
+                </div>
+              )}
+
               {isActivePlayer && !disabled && (
                 isChallengersSlot ? (
                   // Challenger's chosen slot — shown but blocked for active player
@@ -98,7 +110,7 @@ export function Timeline({ timeline, isActivePlayer, onPlace, disabled = false, 
           disabled={disabled}
           className="py-3 bg-green-500 hover:bg-green-400 text-black font-bold rounded-xl transition disabled:opacity-50"
         >
-          Place here (slot {selectedSlot + 1})
+          Lock in slot {selectedSlot + 1}
         </button>
       )}
 

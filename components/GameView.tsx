@@ -13,14 +13,15 @@ interface GameViewProps {
   actions: {
     submitGuess: (title: string, artist: string) => Promise<unknown>
     skipGuess: () => Promise<unknown>
-    placeCard: (position: number) => Promise<unknown>
+    previewPlacement: (position: number) => Promise<unknown>
+    placeCard: () => Promise<unknown>
     callHitster: (position: number) => Promise<unknown>
     nextTurn: () => Promise<unknown>
   }
 }
 
 export function GameView({ gameState, myPlayerId, actions }: GameViewProps) {
-  const { players, activePlayerId, previewUrl, turnPhase, lastResult, settings, myTimeline, myTokens, pendingChallengerName, pendingChallengerPosition } = gameState
+  const { players, activePlayerId, previewUrl, turnPhase, lastResult, settings, myTimeline, myTokens, pendingChallengerName, pendingChallengerPosition, previewedPosition } = gameState
   const isActivePlayer = activePlayerId === myPlayerId
   const activePlayer = players.find(p => p.id === activePlayerId)
 
@@ -57,34 +58,87 @@ export function GameView({ gameState, myPlayerId, actions }: GameViewProps) {
         </div>
       )}
 
-      <Timeline
-        timeline={myTimeline}
-        isActivePlayer={isActivePlayer && turnPhase === 'placing'}
-        onPlace={actions.placeCard}
-        disabled={turnPhase !== 'placing'}
-        challengerSlot={isActivePlayer && turnPhase === 'placing' ? pendingChallengerPosition : null}
-        challengerName={pendingChallengerName}
-      />
+      {/* Active player's own timeline */}
+      {(turnPhase === 'placing' || turnPhase === 'previewing') && (
+        <Timeline
+          timeline={myTimeline}
+          isActivePlayer={isActivePlayer && turnPhase === 'placing'}
+          onPlace={actions.previewPlacement}
+          disabled={!isActivePlayer || turnPhase !== 'placing'}
+          challengerSlot={isActivePlayer && turnPhase === 'placing' ? pendingChallengerPosition : null}
+          challengerName={pendingChallengerName}
+          previewedSlot={isActivePlayer && turnPhase === 'previewing' ? previewedPosition : null}
+        />
+      )}
 
-      {players.filter(p => p.id !== myPlayerId).map(p => (
-        <div key={p.id} className="flex flex-col gap-2">
-          <h3 className="text-xs text-gray-500 uppercase tracking-wider">{p.name}&apos;s timeline</h3>
-          {p.timeline.length === 0 ? (
-            <p className="text-gray-700 text-xs italic">No cards yet</p>
-          ) : (
-            <div className="flex items-center gap-1 overflow-x-auto pb-1">
-              {p.timeline.map((card, i) => (
-                <div key={i} className="bg-gray-900 border border-gray-700 rounded-xl px-2 py-1.5 text-center min-w-[72px] flex-shrink-0">
-                  <p className="text-blue-400 font-bold text-base">{card.year}</p>
-                  <p className="text-xs text-gray-500 truncate max-w-[60px]">{cleanTitle(card.title)}</p>
-                </div>
-              ))}
-            </div>
-          )}
+      {/* Active player: picking phase status */}
+      {isActivePlayer && turnPhase === 'placing' && (
+        <div className="bg-gray-800 rounded-2xl p-4 text-center text-gray-400 text-sm">
+          Pick a slot and lock it in — opponents will then get a chance to challenge
         </div>
-      ))}
+      )}
 
-      {!isActivePlayer && turnPhase === 'placing' && settings.tokensEnabled && (
+      {/* Active player: previewing phase — waiting for challengers, confirm button */}
+      {isActivePlayer && turnPhase === 'previewing' && (
+        <div className="flex flex-col gap-3">
+          <div className="bg-gray-800 rounded-2xl p-4 text-center text-gray-400 text-sm">
+            {pendingChallengerName
+              ? `${pendingChallengerName} is challenging you!`
+              : 'Waiting for opponents to decide...'}
+          </div>
+          <button
+            onClick={() => actions.placeCard()}
+            className="py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl transition"
+          >
+            Confirm placement
+          </button>
+        </div>
+      )}
+
+      {/* Other players' timelines */}
+      {players.filter(p => p.id !== myPlayerId).map(p => {
+        const isThisPlayerActive = p.id === activePlayerId
+        // Show where the active player locked in their slot
+        const showPreviewedSlot = isThisPlayerActive && turnPhase === 'previewing' && previewedPosition !== null
+
+        return (
+          <div key={p.id} className="flex flex-col gap-2">
+            <h3 className="text-xs text-gray-500 uppercase tracking-wider">
+              {p.name}&apos;s timeline
+              {isThisPlayerActive && turnPhase === 'previewing' && (
+                <span className="ml-2 text-purple-400 normal-case">locked in slot {previewedPosition! + 1}</span>
+              )}
+            </h3>
+            {p.timeline.length === 0 && !showPreviewedSlot ? (
+              <p className="text-gray-700 text-xs italic">No cards yet</p>
+            ) : (
+              <div className="flex items-center gap-1 overflow-x-auto pb-1">
+                {Array.from({ length: p.timeline.length + 1 }, (_, slotIndex) => (
+                  <div key={slotIndex} className="flex items-center gap-1 flex-shrink-0">
+                    {showPreviewedSlot && slotIndex === previewedPosition && (
+                      <div
+                        className="w-5 h-14 rounded flex items-center justify-center border-2 border-purple-500 bg-purple-500/20"
+                        title="Active player's chosen position"
+                      >
+                        <span className="text-purple-400 text-xs">▼</span>
+                      </div>
+                    )}
+                    {slotIndex < p.timeline.length && (
+                      <div className="bg-gray-900 border border-gray-700 rounded-xl px-2 py-1.5 text-center min-w-[72px]">
+                        <p className="text-blue-400 font-bold text-base">{p.timeline[slotIndex].year}</p>
+                        <p className="text-xs text-gray-500 truncate max-w-[60px]">{cleanTitle(p.timeline[slotIndex].title)}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )
+      })}
+
+      {/* HITSTER controls — only available once active player has locked in */}
+      {!isActivePlayer && turnPhase === 'previewing' && settings.tokensEnabled && (
         <TokenControls
           tokens={myTokens}
           canCallHitster={myTokens > 0 && pendingChallengerName === null}
@@ -92,12 +146,6 @@ export function GameView({ gameState, myPlayerId, actions }: GameViewProps) {
           challengerName={pendingChallengerName}
           activePlayerTimeline={activePlayer?.timeline ?? []}
         />
-      )}
-
-      {isActivePlayer && turnPhase === 'placing' && (
-        <div className="bg-gray-800 rounded-2xl p-4 text-center text-gray-400 text-sm">
-          Pick a slot on your timeline to place the card
-        </div>
       )}
 
       {lastResult && turnPhase === 'revealing' && (

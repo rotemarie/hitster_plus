@@ -35,6 +35,7 @@ export async function POST(request: Request) {
     turnPhase: 'listening',
     pendingGuess: null,
     pendingChallenge: null,
+    previewedPosition: null,
     winnerId: null,
   }
 

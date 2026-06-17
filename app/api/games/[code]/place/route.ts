@@ -8,7 +8,7 @@ export async function POST(
   request: Request,
   { params }: { params: { code: string } }
 ) {
-  const { playerId, position } = await request.json()
+  const { playerId } = await request.json()
   const state = await getGame(params.code)
 
   if (!state) return NextResponse.json({ error: 'Game not found' }, { status: 404 })
@@ -16,8 +16,10 @@ export async function POST(
 
   const activePlayer = state.players[state.activePlayerIndex]
   if (activePlayer.id !== playerId) return NextResponse.json({ error: 'Not your turn' }, { status: 403 })
-  if (state.turnPhase !== 'placing') return NextResponse.json({ error: 'Not in placing phase' }, { status: 400 })
+  if (state.turnPhase !== 'previewing') return NextResponse.json({ error: 'Not in previewing phase' }, { status: 400 })
+  if (state.previewedPosition === null) return NextResponse.json({ error: 'No position locked in' }, { status: 400 })
 
+  const position = state.previewedPosition
   const track = state.currentTrack!
   const card: Card = { title: track.title, artist: track.artist, year: track.year }
 
@@ -53,6 +55,7 @@ export async function POST(
   state.turnPhase = 'revealing'
   state.pendingGuess = null
   state.pendingChallenge = null
+  state.previewedPosition = null
 
   if (winner) {
     state.phase = 'finished'

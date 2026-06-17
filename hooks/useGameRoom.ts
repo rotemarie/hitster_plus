@@ -25,6 +25,7 @@ function initialState(): ClientGameState {
     myTokens: 0,
     pendingChallengerName: null,
     pendingChallengerPosition: null,
+    previewedPosition: null,
   }
 }
 
@@ -55,7 +56,8 @@ export function useGameRoom(roomCode: string, playerId: string) {
           myTimeline: data.myTimeline,
           myTokens: data.myTokens,
           pendingChallengerName: null,
-    pendingChallengerPosition: null,
+          pendingChallengerPosition: null,
+          previewedPosition: data.previewedPosition ?? null,
         })
       })
       .catch(() => setError('Failed to load game state'))
@@ -96,12 +98,17 @@ export function useGameRoom(roomCode: string, playerId: string) {
         previewUrl: data.previewUrl,
         lastResult: null,
         pendingChallengerName: null,
-    pendingChallengerPosition: null,
+        pendingChallengerPosition: null,
+        previewedPosition: null,
       }))
     })
 
     channel.bind('guess-submitted', () => {
       setGameState(prev => ({ ...prev, turnPhase: 'placing' }))
+    })
+
+    channel.bind('placement-previewed', (data: { position: number }) => {
+      setGameState(prev => ({ ...prev, previewedPosition: data.position, turnPhase: 'previewing' }))
     })
 
     channel.bind('hitster-called', (data: { challengerName: string; challengerPosition: number }) => {
@@ -151,7 +158,8 @@ export function useGameRoom(roomCode: string, playerId: string) {
     start: () => post('start', {}),
     submitGuess: (title: string, artist: string) => post('guess', { title, artist }),
     skipGuess: () => post('guess', {}),
-    placeCard: (position: number) => post('place', { position }),
+    previewPlacement: (position: number) => post('preview', { position }),
+    placeCard: () => post('place', {}),
     callHitster: (position: number) => post('hitster', { position }),
     nextTurn: () => post('next', {}),
   }
