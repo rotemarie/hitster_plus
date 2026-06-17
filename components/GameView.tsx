@@ -20,7 +20,7 @@ interface GameViewProps {
 }
 
 export function GameView({ gameState, myPlayerId, actions }: GameViewProps) {
-  const { players, activePlayerId, previewUrl, turnPhase, lastResult, settings, myTimeline, myTokens, pendingChallengerName } = gameState
+  const { players, activePlayerId, previewUrl, turnPhase, lastResult, settings, myTimeline, myTokens, pendingChallengerName, pendingChallengerPosition } = gameState
   const isActivePlayer = activePlayerId === myPlayerId
   const activePlayer = players.find(p => p.id === activePlayerId)
 
@@ -62,6 +62,8 @@ export function GameView({ gameState, myPlayerId, actions }: GameViewProps) {
         isActivePlayer={isActivePlayer && turnPhase === 'placing'}
         onPlace={actions.placeCard}
         disabled={turnPhase !== 'placing'}
+        challengerSlot={isActivePlayer && turnPhase === 'placing' ? pendingChallengerPosition : null}
+        challengerName={pendingChallengerName}
       />
 
       {players.filter(p => p.id !== myPlayerId).map(p => (

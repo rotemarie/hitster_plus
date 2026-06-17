@@ -24,6 +24,7 @@ function initialState(): ClientGameState {
     myTimeline: [],
     myTokens: 0,
     pendingChallengerName: null,
+    pendingChallengerPosition: null,
   }
 }
 
@@ -54,6 +55,7 @@ export function useGameRoom(roomCode: string, playerId: string) {
           myTimeline: data.myTimeline,
           myTokens: data.myTokens,
           pendingChallengerName: null,
+    pendingChallengerPosition: null,
         })
       })
       .catch(() => setError('Failed to load game state'))
@@ -94,6 +96,7 @@ export function useGameRoom(roomCode: string, playerId: string) {
         previewUrl: data.previewUrl,
         lastResult: null,
         pendingChallengerName: null,
+    pendingChallengerPosition: null,
       }))
     })
 
@@ -101,8 +104,8 @@ export function useGameRoom(roomCode: string, playerId: string) {
       setGameState(prev => ({ ...prev, turnPhase: 'placing' }))
     })
 
-    channel.bind('hitster-called', (data: { challengerName: string }) => {
-      setGameState(prev => ({ ...prev, pendingChallengerName: data.challengerName }))
+    channel.bind('hitster-called', (data: { challengerName: string; challengerPosition: number }) => {
+      setGameState(prev => ({ ...prev, pendingChallengerName: data.challengerName, pendingChallengerPosition: data.challengerPosition }))
     })
 
     channel.bind('turn-result', (data: TurnResultPayload) => {

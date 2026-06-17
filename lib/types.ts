@@ -100,5 +100,6 @@ export interface ClientGameState {
   winnerName: string | null
   myTimeline: Card[]
   myTokens: number
-  pendingChallengerName: string | null  // name of player who called HITSTER this turn
+  pendingChallengerName: string | null
+  pendingChallengerPosition: number | null
 }
